@@ -1,0 +1,47 @@
+{
+  "radioPowerDbm": {
+    "min": 20,
+    "max": 80,
+    "telemetry": false
+  },
+  "coolingSystemPowerPct": {
+    "min": 0,
+    "max": 100,
+    "telemetry": false
+  },
+  "mainEngineThrustPct": {
+    "min": 0,
+    "max": 100,
+    "telemetry": false
+  },
+  "orientationZenithAngleDeg": {
+    "min": 0,
+    "max": 359,
+    "telemetry": true
+  },
+  "orientationAzimuthAngleDeg": {
+    "min": 0,
+    "max": 359,
+    "telemetry": true
+  },
+  "vesselAltitudeM": {
+    "min": 0,
+    "max": 35000000,
+    "telemetry": true
+  },
+  "vesselSpeedMps": {
+    "min": 0,
+    "max": 15000,
+    "telemetry": true
+  },
+  "mainEngineFuelPct": {
+    "min": 0,
+    "max": 100,
+    "telemetry": true
+  },
+  "temperatureInternalDeg": {
+    "min": -50,
+    "max": 150,
+    "telemetry": true
+  }
+}
