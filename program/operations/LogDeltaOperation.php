@@ -2,10 +2,13 @@
 
 namespace program\operations;
 
-class StartOperation extends InternalOperation
+class LogDeltaOperation extends InternalOperation
 {
-    public function __construct() {
-        $this->type   = self::START_PROGRAM;
-        $this->deltaT = 0;
+    /**
+     * LogDeltaOperation constructor.
+     * @param int $deltaT
+     */
+    public function __construct(int $deltaT) {
+        parent::__construct(self::LOG_DELTA, $deltaT);
     }
 }

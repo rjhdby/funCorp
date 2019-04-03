@@ -1,14 +1,16 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: U_60A9
- * Date: 01.04.2019
- * Time: 16:05
- */
 
 namespace program;
 
-class FlyProgramInterface
+interface FlyProgramInterface
 {
+    public function __construct(int $startUp, array $operations);
 
+    public function getDelta(): int;
+
+    public function getStartUp(): int;
+
+    public function getNext(): ?array;
+
+    public function isFinished(): bool;
 }

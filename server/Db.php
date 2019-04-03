@@ -33,7 +33,7 @@ class Db
         $stmt->bindParam(':set', $value);
         $stmt->bindParam(':time', $time);
         foreach ($params->getNames() as $name) {
-            $value = $params->get($name);
+            $value = $params[$name]->get();
             $stmt->execute();
         }
     }

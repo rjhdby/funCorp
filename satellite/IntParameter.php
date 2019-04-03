@@ -1,12 +1,13 @@
 <?php
 
 namespace satellite;
-class Parameter implements ParameterInterface
+class IntParameter implements ParameterInterface
 {
     private $min;
     private $max;
     private $isImportant;
     private $current;
+    private $newValue;
 
     /**
      * Parameter constructor.
@@ -24,25 +25,25 @@ class Parameter implements ParameterInterface
     /**
      * @return int
      */
-    public function get(): int {
+    public function get(): ?int {
         return $this->current;
     }
 
     /**
-     * @param int $value
+     * @param mixed $value
      * @return bool
      */
-    public function set(int $value): bool {
+    public function set($value): bool {
         $this->current = $value;
 
         return $this->validate();
     }
 
     /**
-     * @param int|null $check
+     * @param mixed|null $check
      * @return bool
      */
-    public function validate(int $check = null): bool {
+    public function validate($check = null): bool {
         return ($check ?? $this->current) >= $this->min
                && ($check ?? $this->current) <= $this->max;
     }
@@ -52,5 +53,19 @@ class Parameter implements ParameterInterface
      */
     public function isTelemetry(): bool {
         return $this->isImportant;
+    }
+
+    /**
+     * @return int
+     */
+    public function getNewValue(): ?int {
+        return $this->newValue;
+    }
+
+    /**
+     * @param $value
+     */
+    public function setNewValue($value): void {
+        $this->newValue = $value;
     }
 }

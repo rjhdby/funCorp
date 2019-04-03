@@ -2,15 +2,12 @@
 
 namespace program\operations;
 
-class GetOperation implements OperationInterface
-{
-    /** @var int $deltaT */
-    private $deltaT;
-    /** @var string[] $variables */
-    private $variables;
+use satellite\SatelliteParametersInterface;
 
-    /** @var string $type */
-    private $type = self::GET_PARAM;
+class GetOperation extends Operation
+{
+    /** @var string[] $variables */
+    public $variables;
 
     /**
      * Operation constructor.
@@ -18,35 +15,15 @@ class GetOperation implements OperationInterface
      * @param array $variables
      */
     public function __construct(int $deltaT, array $variables) {
-        $this->deltaT    = $deltaT;
-        $this->variables = $variables;
+        parent::__construct(self::GET_PARAM, $deltaT);
+        $this->payload = new GetPayload($variables);
     }
 
     /**
-     * @return array
+     * @param SatelliteParametersInterface $data
+     * @return bool
      */
-    public function getPayload(): array {
-        return $this->variables;
-    }
-
-    /**
-     * @return int
-     */
-    public function getId(): int {
-        return -1;
-    }
-
-    /**
-     * @return string
-     */
-    public function getType(): string {
-        return $this->type;
-    }
-
-    /**
-     * @return int
-     */
-    public function getDelta(): int {
-        return $this->deltaT;
+    public function validate(SatelliteParametersInterface $data): bool {
+        return true;
     }
 }

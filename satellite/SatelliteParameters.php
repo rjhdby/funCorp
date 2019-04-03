@@ -4,7 +4,7 @@ namespace satellite;
 
 class SatelliteParameters implements SatelliteParametersInterface
 {
-    /** @var Parameter[] */
+    /** @var IntParameter[] */
     private $parameters = [];
 
     /**
@@ -19,68 +19,78 @@ class SatelliteParameters implements SatelliteParametersInterface
     }
 
     /**
-     * @param string $name
-     * @param int $value
-     * @return bool
-     */
-    public function set(string $name, int $value): bool {
-        if (!isset($this->parameters[ $name ])) {
-            throw new \RuntimeException("Unknown parameter $name");
-        }
-
-        return $this->parameters[ $name ]->set($value);
-    }
-
-    /**
-     * @param string $name
-     * @return int
-     */
-    public function get(string $name): int {
-        if (!isset($this->parameters[ $name ])) {
-            throw new \RuntimeException("Unknown parameter $name");
-        }
-
-        return $this->parameters[ $name ]->get();
-    }
-
-    /**
-     * @param string $name
-     * @param int|null $value
-     * @return bool
-     */
-    public function validate(string $name, int $value = null): bool {
-        if (!isset($this->parameters[ $name ])) {
-            throw new \RuntimeException("Unknown parameter $name");
-        }
-
-        return $this->parameters[ $name ]->validate($value);
-    }
-
-    /**
-     * @param string $name
-     * @return bool
-     */
-    public function isImportant(string $name): bool {
-        return $this->parameters[ $name ]->isTelemetry();
-    }
-
-    /**
-     * @return array
+     * @return string[]
      */
     public function getNames(): array {
         return array_keys($this->parameters);
     }
 
     /**
-     * @param string $name
-     * @param int $min
-     * @param int $max
-     * @param bool $telemetry
-     * @return SatelliteParametersInterface
+     * Whether a offset exists
+     * @link https://php.net/manual/en/arrayaccess.offsetexists.php
+     * @param mixed $offset <p>
+     * An offset to check for.
+     * </p>
+     * @return boolean true on success or false on failure.
+     * </p>
+     * <p>
+     * The return value will be casted to boolean if non-boolean was returned.
+     * @since 5.0.0
      */
-    public function create(string $name, int $min, int $max, bool $telemetry): SatelliteParametersInterface {
-        $param = new Parameter($min, $max, $telemetry);
+    public function offsetExists($offset): bool {
+        return isset($this->parameters[ $offset ]);
+    }
 
-        return $this->add($name, $param);
+    /**
+     * Offset to retrieve
+     * @link https://php.net/manual/en/arrayaccess.offsetget.php
+     * @param mixed $offset <p>
+     * The offset to retrieve.
+     * </p>
+     * @return mixed Can return all value types.
+     * @since 5.0.0
+     */
+    public function offsetGet($offset): ?ParameterInterface {
+        if (!$this->offsetExists($offset)) {
+            return null;
+        }
+
+        return $this->parameters[ $offset ];
+    }
+
+    /**
+     * Offset to set
+     * @link https://php.net/manual/en/arrayaccess.offsetset.php
+     * @param mixed $offset <p>
+     * The offset to assign the value to.
+     * </p>
+     * @param mixed $value <p>
+     * The value to set.
+     * </p>
+     * @return void
+     * @since 5.0.0
+     */
+    public function offsetSet($offset, $value): void {
+        throw new \RuntimeException('Direct set is prohibited');
+    }
+
+    /**
+     * Offset to unset
+     * @link https://php.net/manual/en/arrayaccess.offsetunset.php
+     * @param mixed $offset <p>
+     * The offset to unset.
+     * </p>
+     * @return void
+     * @since 5.0.0
+     */
+    public function offsetUnset($offset): void {
+        throw new \RuntimeException('Direct unset is prohibited');
+    }
+
+    /**
+     * @return ParameterInterface[]
+     */
+    public function getParams(): array {
+        return $this->parameters;
     }
 }

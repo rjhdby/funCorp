@@ -4,6 +4,7 @@ ini_set('display_errors', 1);
 
 use environment\Environment;
 use satellite\SatelliteParameters;
+use satellite\SatelliteParametersFactory;
 use server\Db;
 use server\Server;
 
@@ -20,7 +21,7 @@ $db     = new Db(__DIR__ . DIRECTORY_SEPARATOR . 'database.sql3');
 $server = new Server($db);
 $env    = new Environment();
 
-$params = $env->getSatelliteParameters(SatelliteParameters::class, file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'parameters.json'));
+$params    = SatelliteParametersFactory::createFromJson(SatelliteParameters::class, file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'parameters.json'));
 
 $cmd = trim(strrchr($_SERVER['REQUEST_URI'], '/'), '/');
 
@@ -29,11 +30,11 @@ if ($cmd === 'reset') {
     $result = ['OK'];
 } elseif ($cmd === '') {
     $content = file_get_contents('php://input');
-    fwrite(fopen('php://stdout', 'wb'), $content . PHP_EOL);
+    fwrite(fopen('php://stdout', 'wb'), 'SET INPUT : '.$content . PHP_EOL);
     $result = $server->setParams($content);
 } else {
     $metrics = explode(',', $cmd);
-    fwrite(fopen('php://stdout', 'wb'), json_encode($metrics, true) . PHP_EOL);
+    fwrite(fopen('php://stdout', 'wb'), 'GET INPUT : '.json_encode($metrics, true) . PHP_EOL);
     $result = $server->getParams($metrics);
 }
 

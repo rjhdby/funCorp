@@ -1,14 +1,19 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: U_60A9
- * Date: 03.04.2019
- * Time: 11:03
- */
 
 namespace program\operations;
 
-class SetPayload
+class SetPayload implements PayloadInterface
 {
+    public $variable;
+    public $set;
 
+    /**
+     * SetPayload constructor.
+     * @param string $variable
+     * @param mixed $set
+     */
+    public function __construct(string $variable, $set) {
+        $this->variable = $variable;
+        $this->set      = $set;
+    }
 }

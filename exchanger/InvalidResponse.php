@@ -1,14 +1,15 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: U_60A9
- * Date: 02.04.2019
- * Time: 17:42
- */
 
 namespace exchanger;
 
-class InvalidResponse
+class InvalidResponse extends Response
 {
 
+    /**
+     * InvalidResponse constructor.
+     * @param string $text
+     */
+    public function __construct(string $text) {
+        parent::__construct($text, 0, 0);
+    }
 }

@@ -2,19 +2,38 @@
 
 namespace program\operations;
 
-interface BaseOperationInterface
+use satellite\SatelliteParametersInterface;
+
+abstract class InternalOperation extends Operation
 {
-    public const START_PROGRAM  = 'start';
-    public const FINISH_PROGRAM = 'finish';
-    public const SET_PARAM      = 'set';
-    public const GET_PARAM      = 'get';
-    public const CHECK_PARAM    = 'check';
+    /**
+     * @return PayloadInterface
+     */
+    public function getPayload(): PayloadInterface {
+        return new class() implements PayloadInterface
+        {
+        };
+    }
 
-    public const INFO_MESSAGE   = 'infoMessage';
-    public const SEND_TELEMETRY = 'sendTelemetry';
-    public const UPDATE_PARAMS  = 'updateParams';
+    /**
+     * @return int
+     */
+    public function getId(): int {
+        return -1;
+    }
 
-    public function getType(): string;
+    /**
+     * @param SatelliteParametersInterface $data
+     * @return bool
+     */
+    public function validate(SatelliteParametersInterface $data = null): bool {
+        return true;
+    }
 
-    public function getDelta(): int;
+    /**
+     * @return bool
+     */
+    public function isCritical(): bool {
+        return false;
+    }
 }

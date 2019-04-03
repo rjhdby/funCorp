@@ -11,31 +11,44 @@ class Telemetry implements TelemetryInterface
         $this->sendLogMessage('info', $message);
     }
 
-    public function sendTelemetry(string $message): void {
+    public function sendValues(array $values): void {
+        $message = implode('&', array_map(
+            function ($k, $v) { return $k . '=' . $v; },
+            array_keys($values),
+            $values
+        ));
         $this->sendErrorMessage('values', $message);
     }
 
+    public function log(string $message): void {
+        $this->sendLogMessage('log', $message);
+    }
+
     private function sendErrorMessage(string $type, string $message): void {
-        fwrite(STDERR, json_encode([
-                                       'type'      => $type,
-                                       'timestamp' => time(),
-                                       'message'   => $message
-                                   ]) . PHP_EOL);
+        $this->writeToStderr(json_encode([
+                                             'type'      => $type,
+                                             'timestamp' => time(),
+                                             'message'   => $message
+                                         ]) . PHP_EOL);
     }
 
     private function sendLogMessage(string $level, string $message): void {
-        fwrite(STDOUT, json_encode([
-                                       'time'    => $this->formattedTime(),
-                                       'level'   => $level,
-                                       'message' => $message
-                                   ]) . PHP_EOL);
+        $this->writeToStdout(json_encode([
+                                             'time'    => $this->formattedTime(),
+                                             'level'   => $level,
+                                             'message' => $message
+                                         ]) . PHP_EOL);
     }
 
     private function formattedTime(): string {
         return (new \DateTime())->format("Y-m-d\TH:i:sT");
     }
 
-    public function log(string $message): void {
-        $this->sendLogMessage('log', $message);
+    protected function writeToStdout(string $text): void {
+        fwrite(STDOUT, $text);
+    }
+
+    protected function writeToStderr(string $text): void {
+        fwrite(STDERR, $text);
     }
 }

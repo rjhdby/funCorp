@@ -2,13 +2,13 @@
 
 namespace program\operations;
 
-class GetPayload implements PayloadInterface
+class BatchSetPayload implements PayloadInterface
 {
     public $variables;
 
     /**
      * GetPayload constructor.
-     * @param string[] $variables
+     * @param OperationInterface[] $variables
      */
     public function __construct(array $variables) {
         $this->variables = $variables;

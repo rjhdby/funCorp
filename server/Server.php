@@ -32,12 +32,13 @@ class Server
                     $current = $row['set'];
             }
             if ($current === $row['set'] && $row['set'] !== $row['current']) {
-                $upd[] = ['variable' => $row['name'], 'value' => $current];
+                $upd[$row['name']] = $current;
             }
             $out[ $row['name'] ] = ['set' => $row['set'], 'value' => $current];
         }
+
         $this->setParams(json_encode($upd, true));
-        fwrite(fopen('php://stdout', 'wb'), json_encode($out) . PHP_EOL);
+        $this->log('GET RESULT', json_encode($out, true));
 
         return $out;
     }
@@ -52,16 +53,26 @@ class Server
             return ['FAIL'];
         }
         $tmp = [];
-        foreach ($raw as $row) {
-            $this->db->setParam($row['variable'], $row['value']);
-            $tmp[] = $row['variable'];
+        $this->log('SET RAW', json_encode($raw, true));
+        foreach ($raw as $key => $value) {
+            $this->db->setParam($key, $value);
+            $tmp[] = $key;
         }
         $params = $this->db->getParams($tmp);
         $out    = [];
         foreach ($params as $row) {
             $out[ $row['name'] ] = ['set' => $row['set'], 'value' => $row['current']];
         }
+        $this->log('SET RESULT', json_encode($out, true));
 
         return $out;
+    }
+
+    /**
+     * @param string $text
+     * @param string $type
+     */
+    private function log(string $type, string $text): void {
+        fwrite(fopen('php://stdout', 'wb'), $type . ' : ' . $text . PHP_EOL);
     }
 }

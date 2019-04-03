@@ -10,14 +10,13 @@ class Response
 
     /**
      * Response constructor.
-     * @param $variable
-     * @param $set
-     * @param $value
+     * @param string $variable
+     * @param mixed $set
+     * @param mixed $value
      */
-    public function __construct($variable, $set, $value) {
+    public function __construct(string $variable, $set, $value) {
         $this->variable = $variable;
         $this->set      = $set;
         $this->value    = $value;
     }
-
 }

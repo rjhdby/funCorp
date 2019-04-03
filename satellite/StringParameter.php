@@ -1,30 +1,27 @@
 <?php
+/**
+ * Stub class
+ */
 
 namespace satellite;
-class IntParameter implements ParameterInterface
+class StringParameter implements ParameterInterface
 {
-    private $min;
-    private $max;
-    private $isImportant;
+    private $isTelemetry;
     private $current;
+    private $newValue;
 
     /**
      * Parameter constructor.
-     * @param int $min
-     * @param int $max
      * @param bool $telemetry
      */
-    public function __construct(int $min, int $max, $telemetry = true) {
-        $this->min         = $min;
-        $this->max         = $max;
-        $this->isImportant = $telemetry;
-        $this->current     = $min;
+    public function __construct($telemetry = true) {
+        $this->isTelemetry = $telemetry;
     }
 
     /**
-     * @return int
+     * @return null|string
      */
-    public function get(): int {
+    public function get(): ?string {
         return $this->current;
     }
 
@@ -43,14 +40,27 @@ class IntParameter implements ParameterInterface
      * @return bool
      */
     public function validate($check = null): bool {
-        return ($check ?? $this->current) >= $this->min
-               && ($check ?? $this->current) <= $this->max;
+        return $this->current === $this->newValue && $this->current !== null;
     }
 
     /**
      * @return bool
      */
     public function isTelemetry(): bool {
-        return $this->isImportant;
+        return $this->isTelemetry;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getNewValue(): ?string {
+        return $this->newValue;
+    }
+
+    /**
+     * @param $value
+     */
+    public function setNewValue($value): void {
+        $this->newValue = $value;
     }
 }

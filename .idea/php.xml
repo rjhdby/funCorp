@@ -3,7 +3,13 @@
   <component name="PhpIncludePathManager">
     <include_path>
       <path value="$PROJECT_DIR$" />
+      <path value="$PROJECT_DIR$/../../phpunit/8.0" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="7.2" />
+  <component name="PhpUnit">
+    <phpunit_settings>
+      <PhpUnitSettings load_method="PHPUNIT_PHAR" bootstrap_file_path="$PROJECT_DIR$/test/bootstrap.php" configuration_file_path="$PROJECT_DIR$/test/phpunit.xml.dist" custom_loader_path="$PROJECT_DIR$/../../phpunit/phpunit-8.0.6.phar" phpunit_phar_path="$PROJECT_DIR$/../../phpunit/8.0/phpunit-8.0.6.phar" use_bootstrap_file="true" use_configuration_file="true" />
+    </phpunit_settings>
+  </component>
 </project>

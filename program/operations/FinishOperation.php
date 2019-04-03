@@ -2,22 +2,13 @@
 
 namespace program\operations;
 
-class StartOperation implements BaseOperationInterface
+class FinishOperation extends InternalOperation
 {
-    /** @var string $type */
-    private $type = self::START_PROGRAM;
-
     /**
-     * @return string
+     * StartOperation constructor.
+     * @param int $deltaT
      */
-    public function getType(): string {
-        return $this->type;
-    }
-
-    /**
-     * @return int
-     */
-    public function getDelta(): int {
-        return 0;
+    public function __construct(int $deltaT) {
+        parent::__construct(self::FINISH_PROGRAM, $deltaT);
     }
 }

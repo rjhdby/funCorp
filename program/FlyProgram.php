@@ -2,68 +2,36 @@
 
 namespace program;
 
-use satellite\SatelliteParametersInterface;
+use program\operations\InternalOperation;
 
-class FlyProgram
+class FlyProgram implements FlyProgramInterface
 {
     /** @var int $startUp */
     private $startUp;
-    /** @var array $operations */
+    private $finish;
+    /** @var InternalOperation[] $operations */
     private $operations;
 
     private $last;
 
-    /**
-     * @param string $json
-     * @param SatelliteParametersInterface $params
-     */
-    public function prepare(string $json, SatelliteParametersInterface $params): void {
-        $this->operations = null;
-        $this->startUp    = null;
-        $this->last       = null;
-        $raw              = json_decode($json, true);
-        if ($raw === null
-            || !isset($raw['startUp'], $raw['operations'])
-            || !\is_int($raw['startUp'])
-            || !\is_array($raw['operations'])
-        ) {
-            throw new \RuntimeException('Fly program is invalid');
-        }
-
-        if ($raw['startUp'] <= time()) {
-            throw new \RuntimeException('Fly program start time is invalid');
-        }
-        $ids           = [];
-        $this->startUp = $raw['startUp'];
-
-        foreach ($raw['operations'] as $data) {
-            $op = new Operation($data);
-            if (!isset($this->operations[ $op->deltaT ])) {
-                $this->operations[ $op->deltaT ] = [];
-            }
-            $this->operations[ $op->deltaT ][] = $op;
-            if (array_key_exists($op->id, $ids)) {
-                throw new \RuntimeException('Duplicate operation id: ' . $op->id);
-            }
-            if (!$params->validate($op->variable, $op->value)) {
-                throw new \RuntimeException('Incorrect value: ' . $op->value . ' for parameter ' . $op->variable);
-            }
-            $ids[ $op->id ] = true;
-        }
+    public function __construct(int $startUp, array $operations) {
+        $this->startUp    = $startUp;
+        $this->operations = $operations;
+        $this->finish     = max(array_keys($operations));
     }
 
     /**
      * @return bool
      */
     public function isFinished(): bool {
-        return $this->last === max(array_keys($this->operations));
+        return $this->getDelta() >= $this->finish;
     }
 
     /**
-     * @return Operation[]|null
+     * @return InternalOperation[]|null
      */
     public function getNext(): ?array {
-        $delta = $this->delta();
+        $delta = $this->getDelta();
         if ($this->last !== $delta && isset($this->operations[ $delta ])) {
             $this->last = $delta;
 
@@ -76,7 +44,7 @@ class FlyProgram
     /**
      * @return int
      */
-    public function delta(): int {
+    public function getDelta(): int {
         return time() - $this->startUp;
     }
 

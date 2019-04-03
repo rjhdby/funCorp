@@ -9,7 +9,7 @@
       "timeout": 1
     },
     {
-      "id": 2,
+      "id": 1,
       "deltaT": 7,
       "variable": "radioPowerDbm",
       "value": -50,

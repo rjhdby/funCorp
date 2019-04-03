@@ -2,7 +2,7 @@
 
 namespace satellite;
 
-interface SatelliteParametersInterface
+interface SatelliteParametersInterface extends \ArrayAccess
 {
     /**
      * @param string $name
@@ -12,42 +12,14 @@ interface SatelliteParametersInterface
     public function add(string $name, ParameterInterface $parameter): SatelliteParametersInterface;
 
     /**
-     * @param string $name
-     * @param int $min
-     * @param int $max
-     * @param bool $telemetry
-     * @return SatelliteParametersInterface
-     */
-    public function create(string $name, int $min, int $max, bool $telemetry): SatelliteParametersInterface;
-
-    /**
-     * @param string $name
-     * @param int $value
-     * @return bool
-     */
-    public function set(string $name, int $value): bool;
-
-    /**
-     * @param string $name
-     * @return int
-     */
-    public function get(string $name): int;
-
-    /**
-     * @param string $name
-     * @param int|null $value
-     * @return bool
-     */
-    public function validate(string $name, int $value = null): bool;
-
-    /**
-     * @param string $name
-     * @return bool
-     */
-    public function isImportant(string $name): bool;
-
-    /**
-     * @return array
+     * @return string[]
      */
     public function getNames(): array;
+
+    /**
+     * @return ParameterInterface[]
+     */
+    public function getParams(): array;
+
+    public function offsetGet($offset): ?ParameterInterface;
 }

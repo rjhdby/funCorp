@@ -4,7 +4,10 @@ namespace exchanger;
 
 use environment\EnvironmentInterface;
 use mq\QueryManagerInterface;
-use program\Operation;
+use program\operations\BatchSetPayload;
+use program\operations\GetPayload;
+use program\operations\PayloadInterface;
+use program\operations\SetPayload;
 use telemetry\TelemetryInterface;
 
 class Exchanger implements ExchangeInterface
@@ -14,22 +17,25 @@ class Exchanger implements ExchangeInterface
     /** @var QueryManagerInterface $mq */
     protected $mq;
     protected $sndQueue;
-    protected $rcvQueue;
     private   $telemetry;
+    private   $rcvQueue;
+
+    private const END_POINT = '/settings/';
 
     /**
-     * Reset values in database
+     * Reset values in database. Test purpose.
      */
+
     public function reset(): void {
-        $curl = curl_init($this->exchangeUri.'reset');
+        $curl = curl_init($this->exchangeUri . 'reset');
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_TIMEOUT_MS, 100);
         curl_exec($curl);
         curl_close($curl);
     }
 
-    public function __construct(EnvironmentInterface $env, TelemetryInterface $telemetry) {
-        $this->exchangeUri = $env->getExchangeUri() . '/settings/';
+    public function __construct(EnvironmentInterface $env, ?TelemetryInterface $telemetry = null) {
+        $this->exchangeUri = $env->getExchangeUri() . self::END_POINT;
         $this->telemetry   = $telemetry;
     }
 
@@ -42,81 +48,118 @@ class Exchanger implements ExchangeInterface
     }
 
     public function processTasks(): void {
-        while ($task = $this->mq->get($this->sndQueue)) {
-            if (\is_array($task) && \is_object($task[0])) {
-                if ($this->telemetry) {
-                    $this->telemetry->log(json_encode(['PATCH' => $task], true));
-                }
-                $this->mq->put($this->rcvQueue, $this->patch($task));
+        /** @var PayloadInterface $request */
+        while ($request = $this->mq->get($this->sndQueue)) {
+            if (!(\is_object($request) && $request instanceof PayloadInterface)) {
+                throw new \InvalidArgumentException('Unknown request. PayloadInterface expected but ' . \gettype($request) . ' received');
+            }
+
+            if ($request instanceof BatchSetPayload) {
+                $payload = $this->makePatchDataSet($request);
+                $this->log('PATCH', $payload);
+                $this->mq->put($this->rcvQueue, $this->patchRequest($payload));
+            } else if ($request instanceof GetPayload) {
+                $payload = $this->makeGetDataSet($request);
+                $this->log('GET', $payload);
+                $this->mq->put($this->rcvQueue, $this->getRequest($payload));
             } else {
-                if ($this->telemetry) {
-                    $this->telemetry->log(json_encode(['GET' => $task], true));
-                }
-                $this->mq->put($this->rcvQueue, $this->get($task));
+                throw new \InvalidArgumentException('Unknown payload type ' . \gettype($request) . ' received');
             }
         }
     }
 
     /**
-     * @param Operation[] $operations
-     * @return Response[]
+     * @param BatchSetPayload $batchPayload
+     * @return string
      */
-    private function patch(array $operations): array {
-        $critical = false;
+    private function makePatchDataSet(BatchSetPayload $batchPayload): string {
+        $out = [];
+        foreach ($batchPayload->variables as $op) {
+            /** @var SetPayload $payload */
+            $payload                   = $op->getPayload();
+            $out[ $payload->variable ] = $payload->set;
+        }
 
-        $curl = curl_init($this->exchangeUri);
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PATCH');
-        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($operations, true));
-
-        return $this->execute($curl, $critical);
+        return json_encode($out, true);
     }
 
     /**
-     * @param array $params
-     * @return Response[]
+     * @param GetPayload $getPayload
+     * @return string
      */
-    private function get(array $params): array {
-        $curl = curl_init($this->exchangeUri . implode(',', $params));
+    private function makeGetDataSet(GetPayload $getPayload): string {
+        return implode(',', $getPayload->variables);
+    }
 
-        return $this->execute($curl);
+    private function log($type, $payload): void {
+        if ($this->telemetry !== null) {
+            $this->telemetry->log($type . ': ' . $payload);
+        }
     }
 
     /**
-     * @param resource $curl
-     * @param bool $critical
-     * @return Response[]
+     * @param string $payload
+     * @return BatchResponse
      */
-    private function execute($curl, $critical = false): array {
+    private function patchRequest(string $payload): BatchResponse {
+        $opts = [
+            CURLOPT_URL           => $this->exchangeUri,
+            CURLOPT_CUSTOMREQUEST => 'PATCH',
+            CURLOPT_POSTFIELDS    => $payload,
+        ];
+
+        return $this->execute($opts);
+    }
+
+    /**
+     * @param string $payload
+     * @return BatchResponse
+     */
+    private function getRequest(string $payload): BatchResponse {
+        return $this->execute([CURLOPT_URL => $this->exchangeUri . $payload]);
+    }
+
+    /**
+     * @param array $opts
+     * @return BatchResponse
+     */
+    private function execute(array $opts): BatchResponse {
+        $curl = curl_init();
+        foreach ($opts as $key => $value) {
+            curl_setopt($curl, $key, $value);
+        }
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_TIMEOUT_MS, 100);
 
-        $result   = curl_exec($curl);
-        $response = json_decode($result, true);
-        $err      = curl_error($curl);
+        $result = curl_exec($curl);
+        $data   = json_decode($result, true);
+        $err    = curl_error($curl);
         curl_close($curl);
-        if (!\is_array($response)) {
-            throw new \RuntimeException("exchanger request error. $err.", $critical);
+
+        $response = new BatchResponse();
+        if (!\is_array($data)) {
+            $response->add(new InvalidResponse('Error connecting API: ' . $err));
+        } else {
+            $this->fillResponse($response, $data);
         }
 
-        return $this->prepareResponse($response);
+        return $response;
     }
 
     /**
-     * @param array $response
-     * @return Response[]
+     * @param BatchResponse $response
+     * @param $data
      */
-    protected function prepareResponse(array $response): array {
-        $out = [];
-        foreach ($response as $key => $value) {
+    private function fillResponse(BatchResponse $response, $data): void {
+        foreach ($data as $key => $value) {
             if (!isset($value['set'], $value['value'])
                 || !\is_int($value['set'])
                 || !\is_int($value['value'])
             ) {
-                throw new \RuntimeException('Invalid request response');
+                $response->add(new InvalidResponse(json_encode([$key => $value], true)));
+            } else {
+                $response->add(new Response($key, $value['set'], $value['value']));
             }
-            $out[] = new Response((string)$key, $value['set'], $value['value']);
         }
-
-        return $out;
     }
 }

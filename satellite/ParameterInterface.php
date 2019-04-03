@@ -3,13 +3,15 @@
 namespace satellite;
 interface ParameterInterface
 {
-    public function __construct(int $min, int $max, $telemetry = true);
+    public function get();
 
-    public function get(): int;
+    public function set($value): bool;
 
-    public function set(int $value): bool;
+    public function getNewValue();
 
-    public function validate(int $check = null): bool;
+    public function setNewValue($value): void;
+
+    public function validate($check = null): bool;
 
     public function isTelemetry(): bool;
 }

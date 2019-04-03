@@ -1,14 +1,16 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: U_60A9
- * Date: 03.04.2019
- * Time: 11:04
- */
 
 namespace program\operations;
 
-class GetPayload
+class GetPayload implements PayloadInterface
 {
+    public $variables;
 
+    /**
+     * GetPayload constructor.
+     * @param string[] $variables
+     */
+    public function __construct(array $variables) {
+        $this->variables = $variables;
+    }
 }

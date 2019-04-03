@@ -1,17 +1,35 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: U_60A9
- * Date: 01.04.2019
- * Time: 15:14
- */
 
 namespace test;
 
-use satellite\SatelliteParameters;
 use PHPUnit\Framework\TestCase;
+use satellite\IntParameter;
+use satellite\SatelliteParameters;
+use satellite\SatelliteParametersInterface;
 
 class SatelliteParametersTest extends TestCase
 {
+    private static $testClass      = SatelliteParameters::class;
+    private static $parameterClass = IntParameter::class;
 
+    /** @var SatelliteParametersInterface $params */
+    private $params;
+
+    public function testGet() {
+        $this->assertFalse($this->params['second']->isTelemetry());
+    }
+
+    public function testGetException() {
+        $this->assertNull($this->params['unknown']);
+    }
+
+    public function testGetNames() {
+        $this->assertEquals(['first', 'second'], $this->params->getNames());
+    }
+
+    protected function setUp(): void {
+        $this->params = new self::$testClass();
+        $this->params->add('first', new self::$parameterClass(0, 10, true));
+        $this->params->add('second', new self::$parameterClass(-10, 10, false));
+    }
 }

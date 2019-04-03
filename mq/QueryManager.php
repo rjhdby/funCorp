@@ -14,6 +14,7 @@ class QueryManager implements QueryManagerInterface
     /**
      * @param string $queue
      * @param mixed $message
+     * @return void
      */
     public function put(string $queue, $message): void {
         if (!isset($this->queries[ $queue ])) {
@@ -27,6 +28,9 @@ class QueryManager implements QueryManagerInterface
      * @return mixed
      */
     public function get(string $queue) {
+        if (!isset($this->queries[ $queue ])) {
+            throw new \RuntimeException("Unknown queue $queue");
+        }
         if (empty($this->queries[ $queue ])) {
             return null;
         }

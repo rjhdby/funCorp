@@ -2,79 +2,52 @@
 
 namespace satellite;
 
-use environment\EnvironmentInterface;
+use exchanger\BatchResponse;
 use exchanger\ExchangeInterface;
-use exchanger\Response;
-use mq\QueryManager;
+use exchanger\InvalidResponse;
 use mq\QueryManagerInterface;
 use program\FlyProgram;
-use program\Operation;
+use program\FlyProgramInterface;
+use program\operations\BatchSetPayload;
+use program\operations\LogDeltaOperation;
+use program\operations\OperationInterface;
+use program\operations\PayloadInterface;
+use program\operations\SetPayload;
 use telemetry\TelemetryInterface;
 
 class Satellite
 {
-    /** @var SatelliteParametersInterface $params */
-    public $params;
-
-    private   $telemetryFreq;
-    private   $exchange;
+    /** @var ExchangeInterface $exchange */
+    private $exchange;
+    /** @var TelemetryInterface $telemetry */
     protected $telemetry;
-
-    private $telemetryParams;
-    private $allParams;
-
     /** @var FlyProgram */
     private $flyProgram;
-    private $nextTelemetrySend;
-
-    /** @var Operation[] */
-    private $awaitTasks = [];
-
     /** @var QueryManagerInterface $mq */
     private $mq;
+    /** @var SatelliteParametersInterface $params */
+    private $params;
 
-    private const FINISH_PROGRAM   = 'finishProgram';
-    private const INFO_MESSAGE     = 'infoMessage';
-    private const CHECK_COMPLETION = 'checkCompletion';
-    private const SEND_TELEMETRY   = 'sendTelemetry';
-    private const UPDATE_PARAMS    = 'updateParams';
+    /** @var string[] */
+    private $telemetryParams = [];  //Cache
 
     /**
      * Satellite constructor.
-     * @param SatelliteParametersInterface $params
      * @param TelemetryInterface $telemetry
      * @param ExchangeInterface $exchange
      * @param QueryManagerInterface $mq
+     * @param SatelliteParametersInterface $params
      */
     public function __construct(
-        SatelliteParametersInterface $params,
         TelemetryInterface $telemetry,
         ExchangeInterface $exchange,
-        QueryManagerInterface $mq
+        QueryManagerInterface $mq,
+        SatelliteParametersInterface $params
     ) {
-        $this->setParams($params);
         $this->telemetry = $telemetry;
         $this->exchange  = $exchange;
         $this->mq        = $mq;
-    }
-
-    /**
-     * @param SatelliteParametersInterface $params
-     */
-    public function setParams(SatelliteParametersInterface $params): void {
-        $this->params = $params;
-        foreach ($params->getNames() as $value) {
-            if ($params->isImportant($value)) {
-                $this->telemetryParams[] = $value;
-            }
-            $this->allParams[] = $value;
-        }
-    }
-
-    /**
-     * @param EnvironmentInterface $env
-     */
-    public function initialize(EnvironmentInterface $env): void {
+        $this->params    = $params;
         try {
             $this->exchange->initialize($this->mq,
                                         QueryManagerInterface::SND_QUEUE,
@@ -83,223 +56,203 @@ class Satellite
         } catch (\RuntimeException $e) {
             $this->criticalShutdown($e->getMessage(), 0);
         }
-        try {
-            $this->telemetryFreq = $env->getTelemetryFreq();
-        } catch (\RuntimeException $e) {
-            $this->telemetry->error($e->getMessage());
-            $this->telemetryFreq = $env->getDefaultTelemetryFreq();
-            $this->telemetry->info('Default frequency value is used: ' . $this->telemetryFreq . ' sec.');
+
+        foreach ($this->params->getParams() as $name => $param) {
+            if ($param->isTelemetry()) {
+                $this->telemetryParams[] = $name;
+            }
         }
     }
 
     /**
-     * @param FlyProgram $program
+     * @param FlyProgramInterface $program
      */
-    public function run(FlyProgram $program): void {
-        $this->flyProgram        = $program;
-        $lastCountdown           = $this->flyProgram->delta();
-        $this->nextTelemetrySend = $lastCountdown;
+    public function run(FlyProgramInterface $program): void {
+        $this->flyProgram = $program;
+        $lastCountdown    = $this->flyProgram->getDelta();
 
         while (true) {
-            $delta = $this->flyProgram->delta();
-
+            $delta      = $this->flyProgram->getDelta();
+            $operations = $this->flyProgram->getNext();
             if ($lastCountdown !== $delta) {
-                if ($delta === 0) {
-                    $this->telemetry->info('Fly program started');
-                }
-                $this->enqueueInfo('Delta ' . $delta);
+                $operations[]  = new LogDeltaOperation($this->flyProgram->getDelta());
                 $lastCountdown = $delta;
             }
-            $this->enqueueTelemetry();
-            $this->enqueueAwaitingCheck();
-            $this->processRequests();
-            $this->processControls();
-            $this->processTelemetry();
-            $this->enqueueIfFinished();
-            usleep(10000);
-        }
-    }
-
-    private function enqueueTelemetry(): void {
-        if ($this->nextTelemetrySend === $this->flyProgram->delta()) {
-            $this->nextTelemetrySend += $this->telemetryFreq;
-            $this->enqueueUpdateParams();
-            $this->mq->put(QueryManagerInterface::SATELLITE_CTRL,
-                           new SatelliteCommand(self::SEND_TELEMETRY, $this->collectTelemetry())
-            );
-        }
-    }
-
-    private function processRequests(): void {
-        $batch = $this->flyProgram->getNext();
-        if ($batch !== null) {
-            $this->mq->put(QueryManager::SND_QUEUE, $batch);
-            foreach ($batch as $task) {
-                $this->holdForCheck($task);
+            if ($operations !== null) {
+                $this->processOperations($operations);
             }
-        }
-        $this->doRequests();
-    }
 
-    private function doRequests(): void {
-        try {
-            $this->exchange->processTasks();
-            $this->processResponses();
-        } catch (\RuntimeException $e) {
-            $this->failedTaskProcess($e->getCode(), $e->getMessage());
-        }
-    }
+            if ($this->flyProgram->isFinished()) {
+                $this->criticalShutdown('Fly program finished but not interrupted', 1);
+            }
 
-    private function enqueueAwaitingCheck(): void {
-        if (isset($this->awaitTasks[ $this->flyProgram->delta() ])) {
-            $this->enqueueUpdateParams();
-            $this->mq->put(QueryManagerInterface::SATELLITE_CTRL,
-                           new SatelliteCommand(self::CHECK_COMPLETION, $this->flyProgram->delta())
-            );
-        }
-    }
-
-    private function enqueueIfFinished(): void {
-        if (empty($this->awaitTasks) && $this->flyProgram->isFinished()) {
-            $this->mq->put(QueryManagerInterface::SATELLITE_CTRL,
-                           new SatelliteCommand(self::FINISH_PROGRAM)
-            );
-        }
-    }
-
-    private function enqueueInfo(string $text): void {
-        $this->mq->put(QueryManagerInterface::SATELLITE_CTRL,
-                       new SatelliteCommand(self::INFO_MESSAGE, $text)
-        );
-    }
-
-    private function processTelemetry(): void {
-        while ($payload = $this->mq->get(QueryManagerInterface::TELEMETRY_SND)) {
-            $this->telemetry->sendTelemetry($payload);
-        }
-    }
-
-    private function processResponses(): void {
-        /** @var Response[] $result */
-        while ($result = $this->mq->get(QueryManagerInterface::RCV_QUEUE)) {
-            $this->telemetry->log(json_encode(['Response' => $result], true));
-            $this->applyResponse($result);
+            usleep(2000);
         }
     }
 
     /**
-     * @param Response[] $responses
+     * @param OperationInterface[] $operations
      */
-    private function applyResponse(array $responses): void {
-        /** @var Response $response */
-        foreach ($responses as $response) {
-            if (!$this->params->set($response->variable, $response->value)) {
-                $this->telemetry->error("Parameter $response->variable is out of range: $response->value");
-            }
-        }
-    }
+    private function processOperations(array $operations): void {
+        $check         = [];
+        $awaitResponse = 0;
 
-    private function processControls(): void {
-        /** @var SatelliteCommand $task */
-        while ($task = $this->mq->get(QueryManagerInterface::SATELLITE_CTRL)) {
-            if (!$task instanceof SatelliteCommand) {
-                $this->telemetry->error('Invalid command received');
-                continue;
-            }
-            switch ($task->command) {
-                case self::UPDATE_PARAMS:
-                    $this->enqueueUpdateParams();
+        foreach ($operations as $op) {
+            switch ($op->getType()) {
+                case OperationInterface::START_PROGRAM:
+                    $this->telemetry->info('Fly program started');
                     break;
-                case self::SEND_TELEMETRY:
-                    $this->mq->put(QueryManagerInterface::TELEMETRY_SND, $task->payload);
-                    break;
-                case self::CHECK_COMPLETION:
-                    $this->checkTasksCompletion($task->payload);
-                    break;
-                case self::INFO_MESSAGE:
-                    $this->telemetry->info($task->payload);
-                    break;
-                case self::FINISH_PROGRAM:
+                case OperationInterface::FINISH_PROGRAM:
                     $this->finish();
                     break;
+                case OperationInterface::GET_PARAM:
+                    $this->requestApi($op->getPayload());
+                    $awaitResponse++;
+                    break;
+                case OperationInterface::BATCH_SET:
+                    /** @var BatchSetPayload $payload */
+                    $payload = $op->getPayload();
+                    $this->requestApi($payload);
+                    $awaitResponse++;
+                    array_push($check, ...$payload->variables);
+                    break;
+                case OperationInterface::CHECK_PARAM:
+                case OperationInterface::SEND_TELEMETRY:
+                    $check[] = $op;
+                    break;
+                case OperationInterface::LOG_DELTA:
+                    $this->telemetry->info('Delta: ' . $this->flyProgram->getDelta());
+                    break;
+                case OperationInterface::INFO_MESSAGE:
+                    $this->telemetry->info($op->getPayload());
+                    break;
                 default:
-                    $this->telemetry->error('Unknown command received');
+                    $this->telemetry->error('Unknown operation ' . $op->getType());
+            }
+        }
+
+        if ($awaitResponse === 0) {
+            return;
+        }
+        /*
+         *Lets imagine that exchanger works asynchronously in separate process
+         */
+        try {
+            $this->exchange->processTasks();
+        } catch (\Exception $e) {
+            $this->criticalShutdown('Internal error: ' . $e->getMessage(), 2);
+        }
+
+        $parameters = $this->getResponses($awaitResponse);
+        $this->checkResponse($parameters, $check);
+    }
+
+    private function requestApi(PayloadInterface $payload): void {
+        $this->mq->put(QueryManagerInterface::SND_QUEUE, $payload);
+    }
+
+    private function getResponses(int $awaitCnt): SatelliteParametersInterface {
+        $deadLine    = microtime(true) + 0.15;
+        $receivedCnt = 0;
+        $received    = [];
+        while (microtime(true) < $deadLine && $receivedCnt < $awaitCnt) {
+            $message = $this->mq->get(QueryManagerInterface::RCV_QUEUE);
+            if (!$message instanceof BatchResponse) {
+                $this->telemetry->error('Internal error. Wrong response received: ' . \gettype($message));
+            } else if ($message !== null) {
+                $received[] = $message;
+                $receivedCnt++;
+            }
+        }
+
+        return $this->parseResponse($received);
+    }
+
+    /**
+     * @param BatchResponse[] $received
+     * @return SatelliteParametersInterface
+     */
+    private function parseResponse(array $received): SatelliteParametersInterface {
+        $receivedParams = new SatelliteParameters();
+
+        foreach ($received as $batchResponse) {
+            foreach ($batchResponse->getResponses() as $response) {
+                if ($response instanceof InvalidResponse) {
+                    $this->telemetry->error('Invalid response: ' . $response->variable);
+                    continue;
+                }
+                $param = $this->params[ $response->variable ];
+                if ($param !== null) {
+                    if ($param->set($response->value) === false) {
+                        $this->telemetry->error('Parameter ' . $response->variable . ' is out of range: ' . $response->value);
+                    }
+                    $param->setNewValue($response->set);
+                    $receivedParams->add($response->variable, $param);
+                }
+            }
+        }
+
+        return $receivedParams;
+    }
+
+    /**
+     * @param SatelliteParametersInterface $params
+     * @param OperationInterface[] $check
+     */
+    private function checkResponse(SatelliteParametersInterface $params, array $check): void {
+        foreach ($check as $op) {
+            switch ($op->getType()) {
+                case OperationInterface::SET_PARAM:
+                    $this->validateSet($op, $params);
+                    break;
+                case OperationInterface::CHECK_PARAM:
+                    $this->validateCheck($op, $params);
+                    break;
+                case OperationInterface::SEND_TELEMETRY:
+                    $this->sendTelemetry($params);
+                    break;
+                default:
+                    $this->telemetry->error('Internal error. Invalid check task');
             }
         }
     }
 
-    /**
-     * @param Operation $task
-     */
-    private function holdForCheck(Operation $task): void {
-        $checkDelta = $task->deltaT + $task->timeout;
-        if (!isset($this->awaitTasks[ $checkDelta ])) {
-            $this->awaitTasks[ $checkDelta ] = [];
-        }
-        $this->awaitTasks[ $checkDelta ][ $task->id ] = $task;
-    }
-
-    /**
-     * @param bool $critical
-     * @param string $error
-     */
-    private function failedTaskProcess(bool $critical, string $error): void {
-        if ($critical) {
-            $this->criticalShutdown("$error. Shutdown on critical operation", 11);
-        } else {
-            $this->telemetry->error("$error. Operation status is unknown");
-        }
-    }
-
-    /**
-     * @param int $currentDelta
-     */
-    private function checkTasksCompletion(int $currentDelta): void {
-        /** @var Operation $task */
-        foreach ($this->awaitTasks[ $currentDelta ] as $task) {
-            $this->checkOperationResult($task);
-        }
-        unset($this->awaitTasks[ $currentDelta ]);
-    }
-
-    private function enqueueUpdateParams(): void {
-        $this->mq->put(QueryManagerInterface::SND_QUEUE, $this->allParams);
-    }
-
-    /**
-     * @param Operation $task
-     */
-    private function checkOperationResult($task): void {
-        if (!$this->params->validate($task->variable)) {
-            if ($task->critical) {
-                $this->criticalShutdown("Parameter $task->variable is out of range: {$this->params->get($task->variable)}", 12);
-            } else {
-                $this->telemetry->error("Parameter $task->variable is out of range: {$this->params->get($task->variable)}");
-            }
-        } elseif ($this->params->get($task->variable) !== $task->value) {
-            if ($task->critical) {
-                $this->criticalShutdown("Parameter $task->variable is wrong. Actual: {$this->params->get($task->variable)}, expect:$task->value", 12);
-            } else {
-                $this->telemetry->error("Parameter $task->variable is wrong. Actual: {$this->params->get($task->variable)}, expect:$task->value");
+    private function validateSet(OperationInterface $op, SatelliteParametersInterface $params): void {
+        /** @var SetPayload $payload */
+        $payload = $op->getPayload();
+        $param   = $params[ $payload->variable ];
+        if ($param === null || $param->getNewValue() !== $payload->set) {
+            $this->telemetry->error('Unexpected response for operation ' . $op->getId());
+            if ($op->isCritical()) {
+                $this->criticalShutdown('Critical operation failed. Shutdown immediately.', 11);
             }
         }
+    }
+
+    private function validateCheck(OperationInterface $op, SatelliteParametersInterface $params): void {
+        /** @var SetPayload $payload */
+        $payload = $op->getPayload();
+        $param   = $params[ $payload->variable ];
+        if ($param === null || $param->get() !== $payload->set) {
+            $result = $param !== null ? $param->get() : 'NULL';
+            $this->telemetry->error('Unexpected operation' . $op->getId() . ' result. Expected ' . $payload->set . ' received ' . $result);
+            if ($op->isCritical()) {
+                $this->criticalShutdown('Critical operation failed. Shutdown immediately.', 12);
+            }
+        }
+    }
+
+    private function sendTelemetry(SatelliteParametersInterface $params): void {
+        $out = [];
+        foreach ($this->telemetryParams as $name) {
+            $out[ $name ] = $params[ $name ]->get();
+        }
+        $this->telemetry->sendValues($out);
     }
 
     protected function finish(): void {
         $this->telemetry->info('Fly program complete');
         exit(0);
-    }
-
-    /**
-     * @return string
-     */
-    private function collectTelemetry(): string {
-        $result = [];
-        foreach ($this->telemetryParams as $paramName) {
-            $result[] = $paramName . '=' . $this->params->get($paramName);
-        }
-
-        return implode('&', $result);
     }
 
     protected function criticalShutdown(string $text, int $code): void {
