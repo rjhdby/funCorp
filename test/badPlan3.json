@@ -1,0 +1,34 @@
+{
+  "startUp": "time",
+  "operations": [
+    {
+      "id": 1,
+      "deltaT": 0,
+      "variable": "coolingSystemPowerPct",
+      "value": 30,
+      "timeout": 1
+    },
+    {
+      "id": 1,
+      "deltaT": 7,
+      "variable": "radioPowerDbm",
+      "value": -50,
+      "timeout": 1,
+      "critical": false
+    },
+    {
+      "id": 3,
+      "deltaT": 11,
+      "variable": "orientationZenithAngleDeg",
+      "value": 270,
+      "timeout": 4
+    },
+    {
+      "id": 4,
+      "deltaT": 11,
+      "variable": "orientationAzimuthAngleDeg",
+      "value": 0,
+      "timeout": 5
+    }
+  ]
+}
