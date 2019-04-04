@@ -20,15 +20,15 @@
       "id": 3,
       "deltaT": 11,
       "variable": "orientationZenithAngleDeg",
-      "value": 70,
+      "value": 270,
       "timeout": 4
     },
     {
       "id": 4,
       "deltaT": 11,
       "variable": "orientationAzimuthAngleDeg",
-      "value": 10,
-      "timeout": 1
+      "value": 0,
+      "timeout": 5
     }
   ]
 }

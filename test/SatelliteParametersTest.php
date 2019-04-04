@@ -29,7 +29,7 @@ class SatelliteParametersTest extends TestCase
 
     protected function setUp(): void {
         $this->params = new self::$testClass();
-        $this->params->add('first', new self::$parameterClass(0, 10, true));
-        $this->params->add('second', new self::$parameterClass(-10, 10, false));
+        $this->params->add('first', new self::$parameterClass(0, 10, 0, true));
+        $this->params->add('second', new self::$parameterClass(-10, 10, 0, false));
     }
 }

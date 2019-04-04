@@ -42,7 +42,7 @@ class SatelliteParametersFactory
         if (\is_int($data['max'])
             && \is_bool($data['telemetry'])
             && \is_int($data['min'])) {
-            return new IntParameter($data['min'], $data['max'], $data['telemetry'] ?? true);
+            return new IntParameter($data['min'], $data['max'], $data['speed'], $data['telemetry'] ?? true);
         }
 
         return null;

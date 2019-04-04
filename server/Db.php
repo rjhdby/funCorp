@@ -27,13 +27,15 @@ class Db
         $time = time();
         $this->db->exec('DELETE FROM parameters');
         $stmt = $this->db->prepare('INSERT INTO parameters (`name`,`speed`,`current`,`set`,`setTime`)
-                          VALUES (:name, 10000, :current, :set, :time)');
+                          VALUES (:name, :speed, :current, :set, :time)');
         $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':speed', $speed);
         $stmt->bindParam(':current', $value);
         $stmt->bindParam(':set', $value);
         $stmt->bindParam(':time', $time);
-        foreach ($params->getNames() as $name) {
-            $value = $params[$name]->get();
+        foreach ($params->getParams() as $name => $param) {
+            $value = $param->get();
+            $speed = $param->getSpeed();
             $stmt->execute();
         }
     }
@@ -44,7 +46,7 @@ class Db
      */
     public function getParams(array $params): array {
         $result = $this->db->query('SELECT `name`, `current`, `set`, `speed`, `setTime` FROM parameters');
-        $out    = [];
+        $out = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             if (\in_array($row['name'], $params, true)) {
                 $out[] = $row;

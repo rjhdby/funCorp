@@ -6,27 +6,30 @@ class IntParameter implements ParameterInterface
     private $min;
     private $max;
     private $isImportant;
-    private $current;
+    private $value;
     private $newValue;
+    private $speed;
 
     /**
      * Parameter constructor.
      * @param int $min
      * @param int $max
+     * @param $speed
      * @param bool $telemetry
      */
-    public function __construct(int $min, int $max, $telemetry = true) {
+    public function __construct(int $min, int $max, $speed, $telemetry = true) {
         $this->min         = $min;
         $this->max         = $max;
         $this->isImportant = $telemetry;
-        $this->current     = $min;
+        $this->value       = $min;
+        $this->speed       = $speed;
     }
 
     /**
      * @return int
      */
     public function get(): ?int {
-        return $this->current;
+        return $this->value;
     }
 
     /**
@@ -34,7 +37,7 @@ class IntParameter implements ParameterInterface
      * @return bool
      */
     public function set($value): bool {
-        $this->current = $value;
+        $this->value = $value;
 
         return $this->validate();
     }
@@ -44,8 +47,8 @@ class IntParameter implements ParameterInterface
      * @return bool
      */
     public function validate($check = null): bool {
-        return ($check ?? $this->current) >= $this->min
-               && ($check ?? $this->current) <= $this->max;
+        return ($check ?? $this->value) >= $this->min
+               && ($check ?? $this->value) <= $this->max;
     }
 
     /**
@@ -67,5 +70,9 @@ class IntParameter implements ParameterInterface
      */
     public function setNewValue($value): void {
         $this->newValue = $value;
+    }
+
+    public function getSpeed(): int {
+        return $this->speed;
     }
 }

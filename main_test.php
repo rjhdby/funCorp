@@ -43,9 +43,9 @@ try {
     $telemetry->error($e->getMessage());
 }
 
-echo PHP_EOL . '===== Critical operation check fails. Collision in fly program. =====' . PHP_EOL . PHP_EOL;
+echo PHP_EOL . '===== Critical operation check fails =====' . PHP_EOL . PHP_EOL;
 try {
-    $program = FlyProgramFactory::getFromJson(FlyProgram::class, prepareJson('test/badPlan4.json'), $params, $env->getTelemetryFreq());
+    $program = FlyProgramFactory::getFromJson(FlyProgram::class, prepareJson('test/badPlan.json'), $params, $env->getTelemetryFreq());
     $satellite->run($program);
 } catch (\RuntimeException $e) {
     $telemetry->error($e->getMessage());

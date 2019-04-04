@@ -14,4 +14,6 @@ interface ParameterInterface
     public function validate($check = null): bool;
 
     public function isTelemetry(): bool;
+
+    public function getSpeed(): int;
 }

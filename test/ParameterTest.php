@@ -64,7 +64,7 @@ class ParameterTest extends TestCase
     }
 
     protected function setUp(): void {
-        $this->param = new self::$testClass(self::MIN, self::MAX);
+        $this->param = new self::$testClass(self::MIN, self::MAX, 0);
         $this->param->set(self::VALID);
     }
 }

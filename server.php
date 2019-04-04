@@ -28,7 +28,8 @@ $env    = new Environment();
 $params = SatelliteParametersFactory::createFromJson(SatelliteParameters::class, file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'parameters.json'));
 
 $cmd = trim(strrchr($_SERVER['REQUEST_URI'], '/'), '/');
-
+myLog('REQUEST_URI', $_SERVER['REQUEST_URI']);
+myLog('CMD', '"'.$cmd.'"');
 switch ($cmd) {
     case 'reset':
         $db->reset($params);
@@ -42,7 +43,7 @@ switch ($cmd) {
         break;
     default:
         $metrics = explode(',', $cmd);
-        myLog('SET INPUT', $cmd);
+        myLog('GET INPUT', $cmd);
         $result = $server->getParams($metrics);
         break;
 }
