@@ -20,19 +20,10 @@ class Server
         $out    = [];
         $upd    = [];
         foreach ($params as $row) {
-            $delta = $time - $row['setTime'];
-            switch ($row['current'] <=> $row['set']) {
-                case -1:
-                    $current = min($row['set'], $row['current'] + $delta * $row['speed']);
-                    break;
-                case 1:
-                    $current = max($row['set'], $row['current'] - $delta * $row['speed']);
-                    break;
-                default:
-                    $current = $row['set'];
-            }
+            $delta   = $time - $row['setTime'];
+            $current = $this->calculateCurrent($row['current'], $row['set'], $row['speed'], $delta);
             if ($current === $row['set'] && $row['set'] !== $row['current']) {
-                $upd[$row['name']] = $current;
+                $upd[ $row['name'] ] = $current;
             }
             $out[ $row['name'] ] = ['set' => $row['set'], 'value' => $current];
         }
@@ -41,6 +32,24 @@ class Server
         $this->log('GET RESULT', json_encode($out, true));
 
         return $out;
+    }
+
+    private function calculateCurrent($old, $new, $speed, $delta): int {
+        if ($speed === 0) {
+            return $new;
+        }
+        switch ($old <=> $new) {
+            case -1:
+                $current = min($new, $old + $delta * $speed);
+                break;
+            case 1:
+                $current = max($new, $old - $delta * $speed);
+                break;
+            default:
+                $current = $new;
+        }
+
+        return $current;
     }
 
     /**
@@ -53,7 +62,6 @@ class Server
             return ['FAIL'];
         }
         $tmp = [];
-        $this->log('SET RAW', json_encode($raw, true));
         foreach ($raw as $key => $value) {
             $this->db->setParam($key, $value);
             $tmp[] = $key;

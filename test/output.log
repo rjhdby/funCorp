@@ -1,0 +1,77 @@
+
+===== Correct plan =====
+
+{"time":"2019-04-04T12:23:05UTC","level":"info","message":"Delta: -2"}
+{"time":"2019-04-04T12:23:06UTC","level":"info","message":"Delta: -1"}
+{"time":"2019-04-04T12:23:07UTC","level":"info","message":"Fly program started"}
+{"time":"2019-04-04T12:23:07UTC","level":"info","message":"Delta: 0"}
+{"time":"2019-04-04T12:23:07UTC","level":"log","message":"GET: orientationZenithAngleDeg,orientationAzimuthAngleDeg,vesselAltitudeM,vesselSpeedMps,mainEngineFuelPct,temperatureInternalDeg"}
+{"time":"2019-04-04T12:23:07UTC","level":"log","message":"PATCH: {\"coolingSystemPowerPct\":30}"}
+{"type":"values","timestamp":1554380587,"message":"orientationZenithAngleDeg=0&orientationAzimuthAngleDeg=0&vesselAltitudeM=0&vesselSpeedMps=0&mainEngineFuelPct=0&temperatureInternalDeg=-50"}
+{"time":"2019-04-04T12:23:08UTC","level":"info","message":"Delta: 1"}
+{"time":"2019-04-04T12:23:08UTC","level":"log","message":"GET: coolingSystemPowerPct"}
+{"time":"2019-04-04T12:23:08UTC","level":"info","message":"Check coolingSystemPowerPct. Expect: 30, actual: 30"}
+{"time":"2019-04-04T12:23:09UTC","level":"info","message":"Delta: 2"}
+{"time":"2019-04-04T12:23:10UTC","level":"info","message":"Delta: 3"}
+{"time":"2019-04-04T12:23:11UTC","level":"info","message":"Delta: 4"}
+{"time":"2019-04-04T12:23:12UTC","level":"info","message":"Delta: 5"}
+{"time":"2019-04-04T12:23:12UTC","level":"log","message":"GET: orientationZenithAngleDeg,orientationAzimuthAngleDeg,vesselAltitudeM,vesselSpeedMps,mainEngineFuelPct,temperatureInternalDeg"}
+{"type":"values","timestamp":1554380592,"message":"orientationZenithAngleDeg=0&orientationAzimuthAngleDeg=0&vesselAltitudeM=0&vesselSpeedMps=0&mainEngineFuelPct=0&temperatureInternalDeg=-50"}
+{"time":"2019-04-04T12:23:13UTC","level":"info","message":"Delta: 6"}
+{"time":"2019-04-04T12:23:14UTC","level":"info","message":"Delta: 7"}
+{"time":"2019-04-04T12:23:14UTC","level":"log","message":"PATCH: {\"radioPowerDbm\":50}"}
+{"time":"2019-04-04T12:23:15UTC","level":"info","message":"Delta: 8"}
+{"time":"2019-04-04T12:23:15UTC","level":"log","message":"GET: radioPowerDbm"}
+{"time":"2019-04-04T12:23:15UTC","level":"info","message":"Check radioPowerDbm. Expect: 50, actual: 50"}
+{"time":"2019-04-04T12:23:16UTC","level":"info","message":"Delta: 9"}
+{"time":"2019-04-04T12:23:17UTC","level":"info","message":"Delta: 10"}
+{"time":"2019-04-04T12:23:17UTC","level":"log","message":"GET: orientationZenithAngleDeg,orientationAzimuthAngleDeg,vesselAltitudeM,vesselSpeedMps,mainEngineFuelPct,temperatureInternalDeg"}
+{"type":"values","timestamp":1554380597,"message":"orientationZenithAngleDeg=0&orientationAzimuthAngleDeg=0&vesselAltitudeM=0&vesselSpeedMps=0&mainEngineFuelPct=0&temperatureInternalDeg=-50"}
+{"time":"2019-04-04T12:23:18UTC","level":"info","message":"Delta: 11"}
+{"time":"2019-04-04T12:23:18UTC","level":"log","message":"PATCH: {\"orientationZenithAngleDeg\":270,\"orientationAzimuthAngleDeg\":0}"}
+{"time":"2019-04-04T12:23:19UTC","level":"info","message":"Delta: 12"}
+{"time":"2019-04-04T12:23:20UTC","level":"info","message":"Delta: 13"}
+{"time":"2019-04-04T12:23:21UTC","level":"info","message":"Delta: 14"}
+{"time":"2019-04-04T12:23:22UTC","level":"info","message":"Delta: 15"}
+{"time":"2019-04-04T12:23:22UTC","level":"log","message":"GET: orientationZenithAngleDeg,orientationAzimuthAngleDeg,vesselAltitudeM,vesselSpeedMps,mainEngineFuelPct,temperatureInternalDeg"}
+{"time":"2019-04-04T12:23:22UTC","level":"info","message":"Check orientationZenithAngleDeg. Expect: 270, actual: 270"}
+{"type":"values","timestamp":1554380602,"message":"orientationZenithAngleDeg=270&orientationAzimuthAngleDeg=0&vesselAltitudeM=0&vesselSpeedMps=0&mainEngineFuelPct=0&temperatureInternalDeg=-50"}
+{"time":"2019-04-04T12:23:23UTC","level":"info","message":"Delta: 16"}
+{"time":"2019-04-04T12:23:23UTC","level":"log","message":"GET: orientationAzimuthAngleDeg"}
+{"time":"2019-04-04T12:23:23UTC","level":"info","message":"Check orientationAzimuthAngleDeg. Expect: 0, actual: 0"}
+{"type":"error","timestamp":1554380603,"message":"Fly program complete"}
+
+===== Critical operation check fails. Collision in fly program. =====
+
+{"time":"2019-04-04T12:23:24UTC","level":"info","message":"Delta: -2"}
+{"time":"2019-04-04T12:23:25UTC","level":"info","message":"Delta: -1"}
+{"time":"2019-04-04T12:23:26UTC","level":"info","message":"Fly program started"}
+{"time":"2019-04-04T12:23:26UTC","level":"info","message":"Delta: 0"}
+{"time":"2019-04-04T12:23:26UTC","level":"log","message":"GET: orientationZenithAngleDeg,orientationAzimuthAngleDeg,vesselAltitudeM,vesselSpeedMps,mainEngineFuelPct,temperatureInternalDeg"}
+{"time":"2019-04-04T12:23:26UTC","level":"log","message":"PATCH: {\"coolingSystemPowerPct\":30}"}
+{"type":"values","timestamp":1554380606,"message":"orientationZenithAngleDeg=270&orientationAzimuthAngleDeg=0&vesselAltitudeM=0&vesselSpeedMps=0&mainEngineFuelPct=0&temperatureInternalDeg=-50"}
+{"time":"2019-04-04T12:23:27UTC","level":"info","message":"Delta: 1"}
+{"time":"2019-04-04T12:23:27UTC","level":"log","message":"GET: coolingSystemPowerPct"}
+{"time":"2019-04-04T12:23:27UTC","level":"info","message":"Check coolingSystemPowerPct. Expect: 30, actual: 30"}
+{"time":"2019-04-04T12:23:28UTC","level":"info","message":"Delta: 2"}
+{"time":"2019-04-04T12:23:28UTC","level":"log","message":"PATCH: {\"radioPowerDbm\":50}"}
+{"time":"2019-04-04T12:23:29UTC","level":"info","message":"Delta: 3"}
+{"time":"2019-04-04T12:23:29UTC","level":"log","message":"GET: radioPowerDbm"}
+{"time":"2019-04-04T12:23:29UTC","level":"info","message":"Check radioPowerDbm. Expect: 50, actual: 50"}
+{"time":"2019-04-04T12:23:30UTC","level":"info","message":"Delta: 4"}
+{"time":"2019-04-04T12:23:31UTC","level":"info","message":"Delta: 5"}
+{"time":"2019-04-04T12:23:31UTC","level":"log","message":"GET: orientationAzimuthAngleDeg,vesselAltitudeM,vesselSpeedMps,mainEngineFuelPct,temperatureInternalDeg"}
+{"time":"2019-04-04T12:23:31UTC","level":"log","message":"PATCH: {\"orientationZenithAngleDeg\":270}"}
+{"type":"values","timestamp":1554380611,"message":"orientationZenithAngleDeg=0&orientationAzimuthAngleDeg=0&vesselAltitudeM=0&vesselSpeedMps=0&mainEngineFuelPct=0&temperatureInternalDeg=-50"}
+{"time":"2019-04-04T12:23:32UTC","level":"info","message":"Delta: 6"}
+{"time":"2019-04-04T12:23:32UTC","level":"log","message":"PATCH: {\"orientationZenithAngleDeg\":10}"}
+{"time":"2019-04-04T12:23:33UTC","level":"info","message":"Delta: 7"}
+{"time":"2019-04-04T12:23:33UTC","level":"log","message":"GET: orientationZenithAngleDeg"}
+{"time":"2019-04-04T12:23:33UTC","level":"log","message":"PATCH: {\"orientationAzimuthAngleDeg\":0}"}
+{"time":"2019-04-04T12:23:33UTC","level":"info","message":"Check orientationZenithAngleDeg. Expect: 10, actual: 10"}
+{"time":"2019-04-04T12:23:34UTC","level":"info","message":"Delta: 8"}
+{"time":"2019-04-04T12:23:34UTC","level":"log","message":"GET: orientationZenithAngleDeg"}
+{"time":"2019-04-04T12:23:34UTC","level":"info","message":"Check orientationZenithAngleDeg. Expect: 270, actual: 10"}
+{"type":"error","timestamp":1554380614,"message":"Unexpected operation3 result. Expected 270 received 10"}
+{"type":"error","timestamp":1554380614,"message":"Critical operation failed. Shutdown immediately."}
+{"type":"error","timestamp":1554380614,"message":"Program aborted with code 12"}

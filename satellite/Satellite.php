@@ -96,6 +96,7 @@ class Satellite
     private function processOperations(array $operations): void {
         $check         = [];
         $awaitResponse = 0;
+        $finish        = false;
 
         foreach ($operations as $op) {
             switch ($op->getType()) {
@@ -103,7 +104,7 @@ class Satellite
                     $this->telemetry->info('Fly program started');
                     break;
                 case OperationInterface::FINISH_PROGRAM:
-                    $this->finish();
+                    $finish = true;
                     break;
                 case OperationInterface::GET_PARAM:
                     $this->requestApi($op->getPayload());
@@ -145,6 +146,10 @@ class Satellite
 
         $parameters = $this->getResponses($awaitResponse);
         $this->checkResponse($parameters, $check);
+
+        if ($finish) {
+            $this->finish();
+        }
     }
 
     private function requestApi(PayloadInterface $payload): void {
@@ -233,6 +238,7 @@ class Satellite
         /** @var SetPayload $payload */
         $payload = $op->getPayload();
         $param   = $params[ $payload->variable ];
+        $this->telemetry->info('Check ' . $payload->variable . '. Expect: ' . $payload->set . ', actual: ' . ($param !== null ? $param->get() : 'NULL'));
         if ($param === null || $param->get() !== $payload->set) {
             $result = $param !== null ? $param->get() : 'NULL';
             $this->telemetry->error('Unexpected operation' . $op->getId() . ' result. Expected ' . $payload->set . ' received ' . $result);

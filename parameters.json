@@ -3,13 +3,13 @@
     "min": 20,
     "max": 80,
     "telemetry": false,
-    "speed": 100
+    "speed": 0
   },
   "coolingSystemPowerPct": {
     "min": 0,
     "max": 100,
     "telemetry": false,
-    "speed": 100
+    "speed": 0
   },
   "mainEngineThrustPct": {
     "min": 0,

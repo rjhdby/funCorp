@@ -5,4 +5,9 @@
         processIsolation="false"
         verbose="true"
 >
+    <testsuites>
+        <testsuite name="FunCorp Satellite Tests">
+            <directory suffix="Test.php">C:/projects/php/funCorp/test</directory>
+        </testsuite>
+    </testsuites>
 </phpunit>

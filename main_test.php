@@ -1,5 +1,6 @@
 <?php
 include 'test/environment.php';
+ini_set('display_errors', 'On');
 
 use environment\Environment;
 use exchanger\Exchanger;
@@ -26,73 +27,26 @@ function prepareJson($file, $delay = 3) {
     return str_replace('"time"', $time, file_get_contents($file));
 }
 
-$mq = new QueryManager();
-
+$mq        = new QueryManager();
 $env       = new Environment();
-$params    = SatelliteParametersFactory::createFromJson(SatelliteParameters::class, file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'parameters.json'));
 $telemetry = new Telemetry();
 $exchange  = new Exchanger($env, $telemetry);
+$params    = SatelliteParametersFactory::createFromJson(SatelliteParameters::class, file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'parameters.json'));
 $satellite = new SatelliteMock($telemetry, $exchange, $mq, $params);
+$exchange->reset();
 
-echo PHP_EOL . 'Correct plan' . PHP_EOL . PHP_EOL;
+echo PHP_EOL . '===== Correct plan =====' . PHP_EOL . PHP_EOL;
 try {
-    $exchange->reset();
     $program = FlyProgramFactory::getFromJson(FlyProgram::class, prepareJson($env->getFlyProgramLocation()), $params, $env->getTelemetryFreq());
     $satellite->run($program);
 } catch (\RuntimeException $e) {
     $telemetry->error($e->getMessage());
 }
 
-echo PHP_EOL . 'Incorrect plan. Wrong SET value for parameter' . PHP_EOL . PHP_EOL;
+echo PHP_EOL . '===== Critical operation check fails. Collision in fly program. =====' . PHP_EOL . PHP_EOL;
 try {
-    $program = FlyProgramFactory::getFromJson(FlyProgram::class, prepareJson('test/badPlan1.json'), $params, $env->getTelemetryFreq());
-} catch (\RuntimeException $e) {
-    $telemetry->error($e->getMessage());
-}
-
-echo PHP_EOL . 'Incorrect plan. Wrong start time' . PHP_EOL . PHP_EOL;
-try {
-    $program = FlyProgramFactory::getFromJson(FlyProgram::class, prepareJson($env->getFlyProgramLocation(), -10), $params, $env->getTelemetryFreq());
+    $program = FlyProgramFactory::getFromJson(FlyProgram::class, prepareJson('test/badPlan4.json'), $params, $env->getTelemetryFreq());
     $satellite->run($program);
-} catch (\RuntimeException $e) {
-    $telemetry->error($e->getMessage());
-}
-
-echo PHP_EOL . 'Incorrect plan. Duplicate ID' . PHP_EOL . PHP_EOL;
-try {
-    $program = FlyProgramFactory::getFromJson(FlyProgram::class, prepareJson('test/badPlan2.json'), $params, $env->getTelemetryFreq());
-} catch (\RuntimeException $e) {
-    $telemetry->error($e->getMessage());
-}
-
-echo PHP_EOL . 'Incorrect plan. No operations' . PHP_EOL . PHP_EOL;
-try {
-    $time    = time() + 3;
-    $json    = str_replace('"time"', $time, '{"startUp": "time"}');
-    $program = FlyProgramFactory::getFromJson(FlyProgram::class, $json, $params, $env->getTelemetryFreq());
-} catch (\RuntimeException $e) {
-    $telemetry->error($e->getMessage());
-}
-
-echo PHP_EOL . 'Incorrect plan. No start time' . PHP_EOL . PHP_EOL;
-try {
-    $time    = time() + 3;
-    $json    = str_replace('"time"', $time, '{"operations": []}');
-    $program = FlyProgramFactory::getFromJson(FlyProgram::class, $json, $params, $env->getTelemetryFreq());
-} catch (\RuntimeException $e) {
-    $telemetry->error($e->getMessage());
-}
-
-echo PHP_EOL . 'Incorrect plan. File not found' . PHP_EOL . PHP_EOL;
-try {
-    $program = FlyProgramFactory::getFromFile(FlyProgram::class, 'noFile', $params, $env->getTelemetryFreq());
-} catch (\RuntimeException $e) {
-    $telemetry->error($e->getMessage());
-}
-
-echo PHP_EOL . 'Incorrect plan. Malformed JSON' . PHP_EOL . PHP_EOL;
-try {
-    $program = FlyProgramFactory::getFromJson(FlyProgram::class, prepareJson('test/badPlan3.json'), $params, $env->getTelemetryFreq());
 } catch (\RuntimeException $e) {
     $telemetry->error($e->getMessage());
 }

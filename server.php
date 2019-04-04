@@ -17,26 +17,36 @@ spl_autoload_register(function ($class) {
     }
 });
 
+function myLog(string $type, string $text): void {
+    fwrite(fopen('php://stdout', 'wb'), $type . ' : ' . $text . PHP_EOL);
+}
+
 $db     = new Db(__DIR__ . DIRECTORY_SEPARATOR . 'database.sql3');
 $server = new Server($db);
 $env    = new Environment();
 
-$params    = SatelliteParametersFactory::createFromJson(SatelliteParameters::class, file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'parameters.json'));
+$params = SatelliteParametersFactory::createFromJson(SatelliteParameters::class, file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'parameters.json'));
 
 $cmd = trim(strrchr($_SERVER['REQUEST_URI'], '/'), '/');
 
-if ($cmd === 'reset') {
-    $db->reset($params);
-    $result = ['OK'];
-} elseif ($cmd === '') {
-    $content = file_get_contents('php://input');
-    fwrite(fopen('php://stdout', 'wb'), 'SET INPUT : '.$content . PHP_EOL);
-    $result = $server->setParams($content);
-} else {
-    $metrics = explode(',', $cmd);
-    fwrite(fopen('php://stdout', 'wb'), 'GET INPUT : '.json_encode($metrics, true) . PHP_EOL);
-    $result = $server->getParams($metrics);
+switch ($cmd) {
+    case 'reset':
+        $db->reset($params);
+        $result = ['OK'];
+        myLog('DATABASE', 'RESET');
+        break;
+    case '':
+        $content = file_get_contents('php://input');
+        myLog('SET INPUT', $content);
+        $result = $server->setParams($content);
+        break;
+    default:
+        $metrics = explode(',', $cmd);
+        myLog('SET INPUT', $cmd);
+        $result = $server->getParams($metrics);
+        break;
 }
 
 header('Content-Type: application/json; charset=utf-8');
+myLog('RESPONSE', json_encode($result, JSON_UNESCAPED_UNICODE));
 echo json_encode($result, JSON_UNESCAPED_UNICODE);

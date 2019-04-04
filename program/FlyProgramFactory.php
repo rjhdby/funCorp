@@ -56,7 +56,7 @@ class FlyProgramFactory
         /** @var FlyProgramInterface $fly */
         $fly = new $class($startUp, $operations);
         if (!$fly instanceof FlyProgramInterface) {
-            throw new \RuntimeException("Wrong fly program class provided: $class instead of FlyProgramInterface");
+            throw new \InvalidArgumentException("Wrong fly program class provided: $class instead of FlyProgramInterface");
         }
 
         return $fly;
@@ -68,25 +68,25 @@ class FlyProgramFactory
      */
     private static function compileStepOne(array $input): array {
         if (!(isset($input['operations']) && \is_array($input['operations']))) {
-            throw new \RuntimeException('Fly program is invalid: operations');
+            throw new \InvalidArgumentException('Fly program is invalid: operations');
         }
         $ids        = [];
-        $operations = [0 => [OperationFactory::makeStart()]];
+        $operations = [];
 
         foreach ($input['operations'] as $data) {
             /** @var SetOperation $op */
             $op = OperationFactory::makeSet($data);
             if (array_key_exists($op->getId(), $ids)) {
-                throw new \RuntimeException('Duplicate operation id: ' . $op->getId());
+                throw new \InvalidArgumentException('Duplicate operation id: ' . $op->getId());
             }
 
             if (!$op->validate(self::$params)) {
-                throw new \RuntimeException('Incorrect "set" operation: ' . json_encode($op->getPayload(), true));
+                throw new \InvalidArgumentException('Incorrect "set" operation: ' . json_encode($op->getPayload(), true));
             }
             $ids[ $op->getId() ]             = true;
             $operations[ $op->getDelta() ][] = $op;
-            $op                              = OperationFactory::makeCheck($data);
-            $operations[ $op->getDelta() ][] = $op;
+            $opCheck                         = OperationFactory::makeCheck($data);
+            $operations[ $opCheck->getDelta() ][] = $opCheck;
         }
 
         self::$last = max(array_keys($operations));
@@ -185,10 +185,10 @@ class FlyProgramFactory
 
     private static function getStartUp(array $input): int {
         if (!(isset($input['startUp']) && \is_int($input['startUp']))) {
-            throw new \RuntimeException('Fly program is invalid: startUp');
+            throw new \InvalidArgumentException('Fly program is invalid: startUp');
         }
         if ($input['startUp'] <= time()) {
-            throw new \RuntimeException('Fly program start time is invalid. Start time is less than the current');
+            throw new \InvalidArgumentException('Fly program start time is invalid. Start time is less than the current');
         }
 
         return $input['startUp'];
